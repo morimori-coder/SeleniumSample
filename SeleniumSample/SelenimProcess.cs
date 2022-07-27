@@ -10,7 +10,7 @@ namespace SeleniumSample
     {
         private IWebDriver _WebDriver;
 
-        public List<IWebElement> SearchResult { get; set; }
+        public List<string> SearchResult { get; set; }
 
         public void SearchChrome()
         {
@@ -20,30 +20,38 @@ namespace SeleniumSample
             ChromeOptions options = new ChromeOptions();
             options.AddArgument("--start-maximized");
 
-            using (_WebDriver = new ChromeDriver(service, options)) 
+            using (_WebDriver = new ChromeDriver(service, options))
             {
                 _WebDriver.Navigate().GoToUrl("https://www.google.co.jp");
-                var element = _WebDriver.FindElement(By.CssSelector("検索バー"));
-                element.SendKeys("検索したいキーワード");
+                var element = _WebDriver.FindElement(By.CssSelector("検索テキストボックス"));
+                element.SendKeys("検索キーワード");
                 element.SendKeys(Keys.Enter);
 
-                var h3List = _WebDriver.FindElements(By.ClassName("各検索結果")).ToList();
-                var nextLink = _WebDriver.FindElement(By.Id("つぎへ"));
-                int counter = 0;
-                try 
+                var h3List = new List<string>();
+                List<IWebElement> currentElements = new List<IWebElement>();
+                IWebElement nextLink;
+                try
                 {
-                    while (nextLink != null)
+                    while (true)
                     {
-                        nextLink.Click();
-                        h3List.AddRange(_WebDriver.FindElements(By.ClassName("各検索結果")).ToList());
-                        nextLink = _WebDriver.FindElement(By.Id("つぎへ"));
-                        counter++;
+                        currentElements = _WebDriver.FindElements(By.ClassName("URLなどの要素")).ToList();
+                        currentElements.ForEach(e => { h3List.Add(e.Text.Replace("\r\n","\t")); });
+
+                        if (_WebDriver.FindElements(By.Id("つぎへ")).Count > 0)
+                        {
+                            nextLink = _WebDriver.FindElement(By.Id("つぎへ"));
+                            nextLink.Click();
+                        }
+                        else
+                            break;
                     }
                     this.SearchResult = h3List;
-                } catch (Exception e)
+                }
+                catch (Exception e)
                 {
                     Console.WriteLine(e.Message);
                 }
+
             }
         }
     }
